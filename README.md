@@ -1,361 +1,288 @@
-# CI/CD Pipeline for Java Web Application using Jenkins & Docker
+# CI/CD Pipeline for a Java Web Application using Jenkins, Maven and Docker
 
-Automated Build • Continuous Integration • Continuous Deployment • Java • Maven • Jenkins • Docker • Tomcat 9
+![Jenkins](https://img.shields.io/badge/CI%2FCD-Jenkins-D24939?logo=jenkins&logoColor=white)
+![Maven](https://img.shields.io/badge/Build-Maven-C71A36?logo=apachemaven&logoColor=white)
+![Docker](https://img.shields.io/badge/Container-Docker-2496ED?logo=docker&logoColor=white)
+![Tomcat](https://img.shields.io/badge/Server-Tomcat%209-F8DC75?logo=apachetomcat&logoColor=black)
+![AWS](https://img.shields.io/badge/Hosted%20on-AWS%20EC2-FF9900?logo=amazonaws&logoColor=white)
 
----
-
-# 📖 Project Overview
-
-This project demonstrates the implementation of a complete **CI/CD (Continuous Integration and Continuous Deployment) Pipeline** for a Java-based **Online Bookstore** web application using **Jenkins**, **Maven**, **Docker**, and **Apache Tomcat 9**.
-
-The pipeline automates the entire software delivery lifecycle—from source code integration to application deployment. Whenever a developer pushes code to GitHub, Jenkins automatically builds the project, packages it into a WAR file using Maven, creates a Docker image, and deploys the application inside a Tomcat 9 Docker container.
-
-This project showcases real-world DevOps practices by reducing manual deployment effort, improving consistency, and enabling faster software delivery.
+> An automated build-and-deploy workflow for a Java **Online Bookstore** web application: **GitHub → Jenkins → Maven (WAR) → Docker (Tomcat 9) → live application**, running on an AWS EC2 Linux server.
 
 ---
 
-# 🏗️ Architecture Diagram
+## Table of Contents
+1. [Project Overview](#project-overview)
+2. [Architecture](#architecture)
+3. [Tech Stack](#tech-stack)
+4. [Pipeline Workflow](#pipeline-workflow)
+5. [Implementation Steps](#implementation-steps)
+6. [Result](#result)
+7. [Troubleshooting](#troubleshooting)
+8. [Limitations and Future Improvements](#limitations-and-future-improvements)
+9. [Key Learnings](#key-learnings)
+10. [Repository Structure](#repository-structure)
+11. [Author](#author)
 
-> **Insert the CI/CD Architecture Diagram here**
+---
 
+## Project Overview
+
+Manually building, packaging and deploying an application is slow and error-prone. This project automates that delivery process for a Java web application using standard DevOps tools.
+
+- **GitHub** stores the source code and can trigger Jenkins when code is pushed.
+- **Jenkins** is the CI/CD server that pulls the code and runs the build.
+- **Maven** compiles the project and packages it as a **WAR** file.
+- **Docker** runs **Apache Tomcat 9** in a container, which hosts the WAR.
+- Everything runs on a **Linux (Amazon Linux 2023) EC2 instance** in AWS Mumbai.
+
+### What this project demonstrates
+| Skill | Evidence in this repo |
+|---|---|
+| CI/CD concepts | Source → build → package → deploy workflow |
+| Jenkins | Jenkins server set up and configured on EC2 |
+| Build automation | Maven build producing a deployable WAR |
+| Containerization | Tomcat 9 running in a Docker container |
+| Linux administration | Java, Maven, Jenkins and Docker configured on Amazon Linux |
+| Troubleshooting | Resolved port, packaging and deployment issues |
+
+---
+
+## Architecture
+
+![Architecture Diagram](Architecture%20-%20CI-CD-Pipeline-Jenkins-Docker.png)
+
+A simplified view of the same flow:
+
+```mermaid
+flowchart LR
+    DEV([Developer]) -->|"git commit & push"| GH["GitHub Repository"]
+    GH -->|"Webhook trigger"| J["Jenkins Server"]
+    J -->|"mvn clean package"| M["Maven Build"]
+    M -->|"Generates WAR"| W["onlinebookstore.war"]
+    W -->|"docker cp"| D["Tomcat 9 Docker Container"]
+    D --> APP(["Live Online Bookstore"])
 ```
-Developer
-     │
-     │ Git Commit & Push
-     ▼
-GitHub Repository
-     │
-     │ Webhook Trigger
-     ▼
-Jenkins CI Server
-     │
-     │ mvn clean package
-     ▼
-Maven Build
-     │
-     │ Generates WAR
-     ▼
-Docker Build
-     │
-     │ Creates Docker Image
-     ▼
-Docker Image
-     │
-     │ docker run
-     ▼
-Tomcat 9 Docker Container
-     │
-     ▼
-Online Bookstore Web Application
-```
 
 ---
 
-# 🚀 Workflow
+## Tech Stack
 
-### 1. Code Development
+| Technology | Purpose |
+|---|---|
+| Java (Amazon Corretto 21) | Runtime for the build and the application |
+| Apache Maven | Build automation and dependency management |
+| Git and GitHub | Version control and source repository |
+| Jenkins | CI/CD automation server |
+| Docker | Containerized runtime for the application |
+| Apache Tomcat 9 | Application server hosting the WAR |
+| Amazon Linux 2023 on AWS EC2 | Server environment |
 
-The developer writes or updates the Java source code for the Online Bookstore application and pushes the changes to the GitHub repository.
+---
 
-### 2. GitHub Webhook
+## Pipeline Workflow
 
-GitHub automatically triggers Jenkins through a webhook whenever new code is pushed.
+1. **Code change:** the developer commits and pushes code to GitHub.
+2. **Trigger:** a GitHub webhook notifies Jenkins about the new commit.
+3. **Fetch:** Jenkins pulls the latest source code.
+4. **Build:** Maven runs `mvn clean package`. It cleans old output, downloads dependencies, compiles the code and packages the application.
+5. **Artifact:** the build produces a deployable **`onlinebookstore.war`** file.
+6. **Deploy:** the WAR is placed in a **Tomcat 9 Docker container**, which deploys it automatically.
+7. **Access:** the application becomes available in the browser.
 
-### 3. Jenkins Pipeline
+---
 
-Jenkins starts the CI/CD pipeline by pulling the latest source code and executing the configured build stages.
+## Implementation Steps
 
-### 4. Maven Build
+<details>
+<summary><b>Step 1: Prepare the Linux server (AWS EC2)</b></summary>
 
-Jenkins runs the following command:
+<br>
+
+- Launch an **Amazon Linux 2023** EC2 instance in the Mumbai region.
+- Security group inbound rules: **22** (SSH), **8080** (Jenkins) and **9090** (application).
+- Connect over SSH and switch to a working user.
+
+</details>
+
+<details>
+<summary><b>Step 2: Install Java and Git</b></summary>
+
+<br>
 
 ```bash
-mvn clean package
-```
-
-This command compiles the project, downloads dependencies, executes the build lifecycle, and generates the **OnlineBookstore.war** artifact.
-
-### 5. Docker Image Creation
-
-Jenkins builds a Docker image using the generated WAR file.
-
-```bash
-docker build -t online-bookstore .
-```
-
-The Docker image contains:
-
-* Apache Tomcat 9
-* OnlineBookstore.war
-* Java Runtime Environment
-
-### 6. Application Deployment
-
-Jenkins deploys the application by starting a Docker container.
-
-```bash
-docker run -d -p 8080:8080 online-bookstore
-```
-
-### 7. Application Access
-
-After deployment, the application is available at:
-
-```
-http://localhost:8080/OnlineBookstore
-```
-
----
-
-# 🛠️ Technologies Used
-
-| Technology      | Purpose                                        |
-| --------------- | ---------------------------------------------- |
-| Java            | Application Development                        |
-| Maven           | Build Automation & Dependency Management       |
-| Git             | Version Control                                |
-| GitHub          | Source Code Repository                         |
-| Jenkins         | Continuous Integration & Continuous Deployment |
-| Docker          | Containerization                               |
-| Apache Tomcat 9 | Java Web Application Server                    |
-| Linux           | Deployment Environment                         |
-
----
-
-# ✨ Features
-
-* Automated CI/CD pipeline using Jenkins
-* GitHub webhook integration
-* Automated Maven build process
-* WAR artifact generation
-* Docker image creation
-* Containerized deployment using Tomcat 9
-* One-click automated deployment
-* Faster software delivery
-* Reduced manual deployment errors
-* Consistent deployment environment
-
----
-
-# 📂 Project Structure
-
-```text
-CI-CD-Pipeline-Jenkins-Docker/
-│
-├── Screenshots/
-│
-├── OnlineBookstore/
-│   ├── src/
-│   ├── pom.xml
-│   ├── Dockerfile
-│   ├── Jenkinsfile
-│   └── target/
-│
-├── CI-CD-Pipeline-Jenkins-Docker.pdf
-├── README.md
-└── LICENSE
-```
-
----
-
-# ⚙️ Prerequisites
-
-Before running this project, ensure the following software is installed:
-
-* Java JDK 8 or later
-* Apache Maven
-* Git
-* GitHub Account
-* Jenkins
-* Docker Desktop / Docker Engine
-* Apache Tomcat 9 (inside Docker)
-
-Verify installations:
-
-```bash
+sudo yum install java-21-amazon-corretto -y
+sudo yum install git -y
 java -version
-mvn -version
 git --version
-docker --version
-jenkins --version
 ```
 
----
+![Java Installation](Screenshots/java%20installation.png)
 
-# 🚀 Deployment Steps
+</details>
 
-## Clone the Repository
+<details>
+<summary><b>Step 3: Install and configure Maven</b></summary>
+
+<br>
 
 ```bash
-git clone https://github.com/PrasannaVelanV/CI-CD-Pipeline-Jenkins-Docker-OnlineBookstore.git
+cd /opt
+sudo wget https://dlcdn.apache.org/maven/maven-3/<version>/binaries/apache-maven-<version>-bin.tar.gz
+sudo tar -xvf apache-maven-<version>-bin.tar.gz
+mvn -version
 ```
 
+![Maven Configuration](Screenshots/maven%20config.png)
+
+</details>
+
+<details>
+<summary><b>Step 4: Set up Jenkins</b></summary>
+
+<br>
+
+- Install Jenkins and start the service. It runs on port **8080**.
+- Unlock Jenkins with the initial admin password and install the suggested plugins.
+- In **Manage Jenkins → Tools**, configure the JDK and Maven installations.
+- Create the project job and connect the GitHub repository.
+- Add a GitHub webhook so a push triggers the Jenkins job.
+
+![Jenkins](Screenshots/Jenkins.png)
+
+![Jenkins Dashboard](Screenshots/Jenkins%20Dashboard.png)
+
+</details>
+
+<details>
+<summary><b>Step 5: Build the project with Maven</b></summary>
+
+<br>
+
 ```bash
-cd CI-CD-Pipeline-Jenkins-Docker-OnlineBookstore
-```
-
----
-
-## Configure Jenkins
-
-* Create a new Jenkins Pipeline project.
-* Connect the GitHub repository.
-* Configure the GitHub webhook.
-* Add the Maven installation.
-* Configure Docker on the Jenkins server.
-
----
-
-## Build the Project
-
-Jenkins automatically executes:
-
-```bash
+git clone <your-project-repository-url>
+cd onlinebookstore
 mvn clean package
 ```
 
----
+Result: `BUILD SUCCESS`, and the WAR file is created in the `target/` folder.
 
-## Build Docker Image
+![Build Success](Screenshots/build%20sucess.png)
 
-```bash
-docker build -t online-bookstore .
-```
+![WAR File Created](Screenshots/war%20file%20created.png)
 
----
+</details>
 
-## Deploy Docker Container
+<details>
+<summary><b>Step 6: Run Tomcat 9 in Docker and deploy the WAR</b></summary>
 
-```bash
-docker run -d -p 8080:8080 online-bookstore
-```
+<br>
 
----
-
-## Access the Application
-
-Open your browser and visit:
-
-```
-http://localhost:8080/OnlineBookstore
-```
-
----
-
-# 📸 Project Screenshots
-
-Include screenshots such as:
-
-* GitHub Repository
-* Jenkins Dashboard
-* Jenkins Build Console Output
-* Successful Maven Build
-* Docker Images
-* Running Docker Container
-* Tomcat Deployment
-* Online Bookstore Home Page
-
----
-
-# 🔄 CI/CD Pipeline Summary
-
-```
-Developer
-      │
-      ▼
-GitHub Repository
-      │
-Webhook Trigger
-      ▼
-Jenkins Pipeline
-      │
-      ▼
-Maven Build
-      │
-      ▼
-WAR Artifact
-      │
-      ▼
-Docker Build
-      │
-      ▼
-Docker Image
-      │
-      ▼
-Docker Container
-      │
-      ▼
-Tomcat 9
-      │
-      ▼
-Live Online Bookstore Application
-```
-
----
-
-# 🎯 Skills Demonstrated
-
-* Continuous Integration (CI)
-* Continuous Deployment (CD)
-* Jenkins Automation
-* Maven Build Automation
-* Docker Containerization
-* Git & GitHub
-* Java Web Application Deployment
-* Apache Tomcat Administration
-* Linux System Administration
-* DevOps Workflow Implementation
-
----
-
-# 🔮 Future Enhancements
-
-* Add SonarQube for code quality analysis
-* Integrate JUnit automated testing
-* Push Docker images to Docker Hub
-* Deploy using Kubernetes
-* Configure Nginx Reverse Proxy
-* Add Prometheus and Grafana monitoring
-* Deploy on AWS EC2
-* Implement Blue-Green Deployment
-* Add Email Notifications in Jenkins
-
----
-
-# 🧹 Clean Up
-
-Stop and remove the running container:
+Jenkins already uses port 8080, so Tomcat's port 8080 is mapped to host port **9090**.
 
 ```bash
-docker stop <container_id>
-docker rm <container_id>
+docker pull tomcat:9
+docker run -d --name tomcat-server -p 9090:8080 tomcat:9
+docker cp target/onlinebookstore.war tomcat-server:/usr/local/tomcat/webapps/
+docker exec -it tomcat-server ls /usr/local/tomcat/webapps/
 ```
 
-Remove the Docker image:
+Tomcat automatically unpacks the WAR, and the `onlinebookstore` application folder appears.
 
-```bash
-docker rmi online-bookstore
+![Tomcat Server](Screenshots/Tomcat-Server.png)
+
+</details>
+
+<details>
+<summary><b>Step 7: Access the application</b></summary>
+
+<br>
+
 ```
+http://<EC2-Public-IP>:9090/onlinebookstore/
+```
+
+![Website Hosted Successfully](Screenshots/Website%20Hosted%20Sucessfully.png)
+
+</details>
 
 ---
 
-# 👨‍💻 Author
+## Result
 
-**Prasanna Velan**
-
-**GitHub:**
-https://github.com/PrasannaVelanV
-
-**LinkedIn:**
-https://www.linkedin.com/in/prasannavelanv
-
-**Portfolio:**
-https://github.com/PrasannaVelanV
+| Stage | Outcome |
+|---|---|
+| Jenkins server | ✅ Running on EC2 (port 8080) |
+| Maven build | ✅ `BUILD SUCCESS`, WAR generated |
+| Docker container | ✅ Tomcat 9 running (host port 9090) |
+| Application | ✅ Online Bookstore live in the browser |
 
 ---
 
-# ⭐ Support
+## Troubleshooting
 
-If you found this project useful, consider giving this repository a **⭐ Star** on GitHub. Your support helps showcase the project and motivates future improvements.
+| Issue | Cause | Fix |
+|---|---|---|
+| `Unable to access jarfile target/*.jar` | The project packages a **WAR**, not an executable JAR | Deploy the WAR to Tomcat, here through the Docker container |
+| Port 8080 already in use | Jenkins uses port 8080 | Map the container to another port, for example `-p 9090:8080` |
+| Page not loading in the browser | Port not open in the security group | Allow ports 8080 and 9090 in the EC2 security group |
+| `404 Not Found` | WAR not deployed, or wrong URL | Check `/usr/local/tomcat/webapps/` and use the lowercase path `/onlinebookstore/` |
 
-Thank you for visiting! 🚀
+---
+
+## Limitations and Future Improvements
+
+This is a learning-focused implementation. For a production-ready pipeline I would add:
+
+- [ ] **A `Jenkinsfile` (pipeline as code)** with separate Build, Test, Docker and Deploy stages, so the whole flow runs from one pipeline.
+- [ ] **A custom `Dockerfile`** that bundles Tomcat and the WAR into a versioned image, instead of copying the WAR into a running container.
+- [ ] **Push images to Docker Hub** or Amazon ECR, with tagged versions for rollback.
+- [ ] **Automated tests** with JUnit as a pipeline gate.
+- [ ] **Code quality analysis** with SonarQube.
+- [ ] **Secure Jenkins:** restrict port 8080 by IP, enable HTTPS, and use credentials management.
+- [ ] **Notifications** on build success or failure (email or Slack).
+- [ ] **Infrastructure as Code** with Terraform or CloudFormation for the EC2 server.
+- [ ] **Container orchestration** with Kubernetes, and **monitoring** with Prometheus and Grafana.
+
+---
+
+## Key Learnings
+
+- How a CI/CD pipeline connects source control, a build server and a runtime environment.
+- The difference between a **JAR** and a **WAR**, and why a WAR needs an application server like Tomcat.
+- Running Jenkins and an application on the same server without port conflicts.
+- Using Docker to get a consistent, disposable runtime for a Java web application.
+- Reading Maven build logs and fixing build and deployment errors.
+
+---
+
+## Repository Structure
+
+```
+.
+├── README.md
+├── Architecture - CI-CD-Pipeline-Jenkins-Docker.png
+├── CI-CD-Pipeline-Jenkins-Docker.pdf
+└── Screenshots/
+    ├── Jenkins Dashboard.png
+    ├── Jenkins.png
+    ├── Tomcat-Server.png
+    ├── Website Hosted Sucessfully.png
+    ├── build sucess.png
+    ├── java installation.png
+    ├── maven config.png
+    └── war file created.png
+```
+
+📄 Full project documentation: [`CI-CD-Pipeline-Jenkins-Docker.pdf`](CI-CD-Pipeline-Jenkins-Docker.pdf)
+
+---
+
+## Author
+
+**Prasanna Velan V**: Entry-Level AWS Cloud and DevOps Engineer
+
+📍 Bengaluru, India  |  📧 prasannavelan2003@gmail.com
+
+[LinkedIn](https://www.linkedin.com/in/prasanna-velan-v) · [Portfolio](https://prasannavelanv.netlify.app/) · [Credly Badges](https://www.credly.com/users/prasanna_velan_v) · [GitHub](https://github.com/PrasannaVelanV)
+
+⭐ If you found this project useful, feel free to star the repository.
